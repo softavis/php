@@ -9,7 +9,10 @@ LABEL org.opencontainers.image.title="Softavis PHP CLI"
 LABEL org.opencontainers.image.description="PHP CLI with Composer, Symfony CLI and Laravel installer"
 LABEL org.opencontainers.image.source="https://github.com/softavis/php"
 
-ENV COMPOSER_HOME=/usr/local/share/composer \
+ENV HOME=/tmp \
+    XDG_CONFIG_HOME=/tmp/.config \
+    COMPOSER_HOME=/tmp/composer \
+    COMPOSER_HOME=/usr/local/share/composer \
     PATH="/usr/local/share/composer/vendor/bin:/root/.composer/vendor/bin:${PATH}"
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
