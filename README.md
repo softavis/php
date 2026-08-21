@@ -1,49 +1,54 @@
-Softavis PHP CLI images
+# Softavis PHP CLI images
 
-PHP CLI images for local development and disposable project commands. Every
-image contains:
+Docker images for local PHP development and disposable project commands.
 
-PHP CLI
+## What's included
 
-Composer
+Each image contains:
 
-Symfony CLI
+- PHP CLI
+- Composer
+- Symfony CLI
+- Laravel installer
+- Git, curl, zip, and unzip
 
-Laravel installer
+## Usage
 
-Git, curl, zip and unzip
+```bash
+docker run --rm --user "$(id -u):$(id -g)" softavis/php:8.4
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/app" -w /app softavis/php:8.4 composer create-project symfony/skeleton .
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/app" -w /app softavis/php:8.4 symfony new my-project
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/app" -w /app softavis/php:8.4 laravel new my-project
+```
 
-Usage
-
-docker run --rm softavis/php:8.4
-docker run --rm -v "$PWD:/app" -w /app softavis/php:8.4 composer create-project symfony/skeleton .
-docker run --rm -v "$PWD:/app" -w /app softavis/php:8.4 symfony new my-project
-docker run --rm -v "$PWD:/app" -w /app softavis/php:8.4 laravel new my-project
+## Make targets
 
 Equivalent Make targets are available:
 
+```bash
 make symfony ARGS="new my-project"
 make composer ARGS="install"
 make laravel ARGS="new my-project"
+```
 
-For dotfiles, these aliases keep the current directory mounted so generated
-projects and Composer files remain on the host:
+## Shell aliases
 
-alias php='docker run --rm -v "$PWD:/app" -w /app softavis/php:8.4 php'
-alias composer='docker run --rm -v "$PWD:/app" -w /app softavis/php:8.4 composer'
-alias symfony='docker run --rm -v "$PWD:/app" -w /app softavis/php:8.4 symfony'
-alias laravel='docker run --rm -v "$PWD:/app" -w /app softavis/php:8.4 laravel'
+These aliases keep the current directory mounted so generated projects and
+Composer files remain on the host:
 
-Available tags are published by the GitHub Actions matrix for PHP 7.1 through
-8.5. PHP versions below 7.2.5 use Composer 2.2 LTS for compatibility.
+```bash
+alias php='docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/app" -w /app softavis/php:8.4 php'
+alias composer='docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/app" -w /app softavis/php:8.4 composer'
+alias symfony='docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/app" -w /app softavis/php:8.4 symfony'
+alias laravel='docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/app" -w /app softavis/php:8.4 laravel'
+```
 
-GitHub Actions setup
+## Available tags
 
-Create these repository secrets before the first push:
+Tags are published from the GitHub Actions matrix for PHP versions `7.3`
+through `8.5`.
 
-DOCKERHUB_USERNAME
+Images are published as:
 
-DOCKERHUB_TOKEN — a Docker Hub access token, not the account password
-
-The workflow publishes to softavis/php:<php-version> and also publishes a
-commit-specific tag for traceability.
+- `softavis/php:<php-version>`
+- `softavis/php:<php-version>-<commit-sha>`
