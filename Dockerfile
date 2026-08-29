@@ -33,11 +33,36 @@ RUN set -eux; \
     esac; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
+        $PHPIZE_DEPS \
         ca-certificates \
         curl \
         git \
         unzip \
+        zip \
+        libcurl4-openssl-dev \
+        libicu-dev \
+        libonig-dev \
+        libpq-dev \
+        libsqlite3-dev \
+        libzip-dev; \
+    docker-php-ext-install -j"$(nproc)" \
+        bcmath \
+        curl \
+        intl \
+        mbstring \
+        pcntl \
+        pdo_mysql \
+        pdo_pgsql \
+        pdo_sqlite \
+        sockets \
         zip; \
+    case "${PHP_VERSION}" in \
+        7.3*) REDIS_VERSION="5.3.7" ;; \
+        *)    REDIS_VERSION="6.3.0" ;; \
+    esac; \
+    pecl install "redis-${REDIS_VERSION}"; \
+    docker-php-ext-enable redis; \
+    pecl clear-cache; \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer /usr/bin/composer /usr/local/bin/composer
