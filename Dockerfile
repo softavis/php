@@ -1,14 +1,17 @@
 ARG PHP_VERSION=8.4
+ARG NODE_VERSION=22
 ARG COMPOSER_VERSION=latest
 
 FROM composer:${COMPOSER_VERSION} AS composer
+
+FROM node:${NODE_VERSION}-bookworm-slim AS node
 
 FROM php:${PHP_VERSION}-cli
 
 ARG PHP_VERSION
 
 LABEL org.opencontainers.image.title="Softavis PHP CLI"
-LABEL org.opencontainers.image.description="PHP CLI with Composer, Symfony CLI and Laravel installer"
+LABEL org.opencontainers.image.description="PHP CLI with Composer, Node.js, Symfony CLI and Laravel installer"
 LABEL org.opencontainers.image.source="https://github.com/softavis/php"
 LABEL org.opencontainers.image.version="${PHP_VERSION}"
 
@@ -66,6 +69,15 @@ RUN set -eux; \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer /usr/bin/composer /usr/local/bin/composer
+
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
+COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
+
+RUN set -eux; \
+    ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm; \
+    ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx; \
+    node --version; \
+    npm --version
 
 RUN set -eux; \
     composer --version; \
