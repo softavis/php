@@ -93,6 +93,20 @@ jobs:
             docker run --rm "${TEST_IMAGE}" php -m | tr '[:upper:]' '[:lower:]' | grep -Fx "${ext}" >/dev/null
           done
 
+      - name: Export architecture image reference
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          echo "${DOCKERHUB_REPOSITORY}:${{ matrix.php-version }}-${{ matrix.arch }}" > "/tmp/${{ matrix.php-version }}-${{ matrix.arch }}.txt"
+
+      - name: Upload architecture image reference
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: refs-${{ matrix.php-version }}-${{ matrix.arch }}
+          path: /tmp/${{ matrix.php-version }}-${{ matrix.arch }}.txt
+          if-no-files-found: error
+
   publish-manifests:
     name: Publish multi-platform manifests
     if: github.event_name != 'pull_request'
@@ -108,15 +122,27 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Download architecture references
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/refs
+          pattern: refs-*
+          merge-multiple: true
+
       - name: Create and publish manifests
         run: |
           set -euo pipefail
-          versions="7.3 7.4 8.0 8.1 8.2 8.3 8.4 8.5"
+          for amd64_file in /tmp/refs/*-amd64.txt; do
+            version="$(basename "${amd64_file}" | sed -E 's/-amd64\.txt$//')"
+            arm64_file="/tmp/refs/${version}-arm64.txt"
+            [ -f "${arm64_file}" ]
 
-          for version in ${versions}; do
+            amd64_ref="$(cat "${amd64_file}")"
+            arm64_ref="$(cat "${arm64_file}")"
+
             docker buildx imagetools create \
               -t "${DOCKERHUB_REPOSITORY}:${version}" \
               -t "${DOCKERHUB_REPOSITORY}:${version}-${GITHUB_SHA}" \
-              "${DOCKERHUB_REPOSITORY}:${version}-amd64" \
-              "${DOCKERHUB_REPOSITORY}:${version}-arm64"
+              "${amd64_ref}" \
+              "${arm64_ref}"
           done
