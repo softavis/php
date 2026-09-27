@@ -89,7 +89,7 @@ jobs:
 
           extensions="bcmath curl intl mbstring pcntl pdo_mysql pdo_pgsql pdo_sqlite redis sockets zip"
           for ext in ${extensions}; do
-            docker run --rm "${TEST_IMAGE}" php -m | grep -Fx "${ext}" >/dev/null
+            docker run --rm "${TEST_IMAGE}" php -m | tr '[:upper:]' '[:lower:]' | grep -Fx "${ext}" >/dev/null
           done
 
       - name: Export digest for manifest assembly
