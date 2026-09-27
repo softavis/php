@@ -93,17 +93,17 @@ jobs:
             docker run --rm "${TEST_IMAGE}" php -m | tr '[:upper:]' '[:lower:]' | grep -Fx "${ext}" >/dev/null
           done
 
-      - name: Export architecture image reference
+      - name: Export architecture image digest
         if: github.event_name != 'pull_request'
         run: |
           set -euo pipefail
-          echo "${DOCKERHUB_REPOSITORY}:${{ matrix.php-version }}-${{ matrix.arch }}" > "/tmp/${{ matrix.php-version }}-${{ matrix.arch }}.txt"
+          echo "${{ steps.build.outputs.digest }}" > "/tmp/${{ matrix.php-version }}-${{ matrix.arch }}.txt"
 
-      - name: Upload architecture image reference
+      - name: Upload architecture image digest
         if: github.event_name != 'pull_request'
         uses: actions/upload-artifact@v4
         with:
-          name: refs-${{ matrix.php-version }}-${{ matrix.arch }}
+          name: digests-${{ matrix.php-version }}-${{ matrix.arch }}
           path: /tmp/${{ matrix.php-version }}-${{ matrix.arch }}.txt
           if-no-files-found: error
 
@@ -122,27 +122,27 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Download architecture references
+      - name: Download architecture digests
         uses: actions/download-artifact@v4
         with:
-          path: /tmp/refs
-          pattern: refs-*
+          path: /tmp/digests
+          pattern: digests-*
           merge-multiple: true
 
       - name: Create and publish manifests
         run: |
           set -euo pipefail
-          for amd64_file in /tmp/refs/*-amd64.txt; do
+          for amd64_file in /tmp/digests/*-amd64.txt; do
             version="$(basename "${amd64_file}" | sed -E 's/-amd64\.txt$//')"
-            arm64_file="/tmp/refs/${version}-arm64.txt"
+            arm64_file="/tmp/digests/${version}-arm64.txt"
             [ -f "${arm64_file}" ]
 
-            amd64_ref="$(cat "${amd64_file}")"
-            arm64_ref="$(cat "${arm64_file}")"
+            amd64_digest="$(cat "${amd64_file}")"
+            arm64_digest="$(cat "${arm64_file}")"
 
             docker buildx imagetools create \
               -t "${DOCKERHUB_REPOSITORY}:${version}" \
               -t "${DOCKERHUB_REPOSITORY}:${version}-${{ github.sha }}" \
-              "${amd64_ref}" \
-              "${arm64_ref}"
+              "${DOCKERHUB_REPOSITORY}@${amd64_digest}" \
+              "${DOCKERHUB_REPOSITORY}@${arm64_digest}"
           done
