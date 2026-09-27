@@ -48,6 +48,9 @@ alias laravel='docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/app" -w /app
 Tags are published from the GitHub Actions matrix for PHP versions `7.3`
 through `8.5`.
 
+Each version tag is published as a multi-platform image with
+`linux/amd64` and `linux/arm64` manifests.
+
 Images are published as:
 
 - `softavis/php:<php-version>`

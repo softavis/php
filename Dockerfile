@@ -33,6 +33,9 @@ RUN set -eux; \
             printf 'Acquire::Check-Valid-Until "false";\n' \
                 > /etc/apt/apt.conf.d/99archive; \
             ;; \
+        bullseye) \
+            sed -i -E '/debian-security/d' /etc/apt/sources.list; \
+            ;; \
     esac; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
@@ -59,6 +62,7 @@ RUN set -eux; \
         pdo_sqlite \
         sockets \
         zip; \
+    pecl channel-update pecl.php.net; \
     case "${PHP_VERSION}" in \
         7.3*) REDIS_VERSION="5.3.7" ;; \
         *)    REDIS_VERSION="6.3.0" ;; \
