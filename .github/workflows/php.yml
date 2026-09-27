@@ -142,7 +142,7 @@ jobs:
 
             docker buildx imagetools create \
               -t "${DOCKERHUB_REPOSITORY}:${version}" \
-              -t "${DOCKERHUB_REPOSITORY}:${version}-${GITHUB_SHA}" \
+              -t "${DOCKERHUB_REPOSITORY}:${version}-${{ github.sha }}" \
               "${amd64_ref}" \
               "${arm64_ref}"
           done
