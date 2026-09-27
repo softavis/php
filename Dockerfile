@@ -59,6 +59,7 @@ RUN set -eux; \
         pdo_sqlite \
         sockets \
         zip; \
+    pecl channel-update pecl.php.net; \
     case "${PHP_VERSION}" in \
         7.3*) REDIS_VERSION="5.3.7" ;; \
         *)    REDIS_VERSION="6.3.0" ;; \
