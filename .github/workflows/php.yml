@@ -58,7 +58,7 @@ jobs:
           cache-from: type=gha,scope=php-${{ matrix.php-version }}-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=php-${{ matrix.php-version }}-${{ matrix.arch }}
 
-      - name: Build and push image by digest
+      - name: Build and push architecture image
         id: build
         if: github.event_name != 'pull_request'
         uses: docker/build-push-action@v6
@@ -67,13 +67,14 @@ jobs:
           file: ./Dockerfile
           platforms: ${{ matrix.platform }}
           build-args: PHP_VERSION=${{ matrix.php-version }}
-          outputs: type=image,name=${{ env.DOCKERHUB_REPOSITORY }},name-canonical=true,push-by-digest=true,push=true
+          push: true
+          tags: ${{ env.DOCKERHUB_REPOSITORY }}:${{ matrix.php-version }}-${{ matrix.arch }}
           cache-from: type=gha,scope=php-${{ matrix.php-version }}-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=php-${{ matrix.php-version }}-${{ matrix.arch }}
 
       - name: Smoke test image on current architecture
         env:
-          TEST_IMAGE: ${{ github.event_name == 'pull_request' && format('local/php:{0}-{1}', matrix.php-version, matrix.arch) || format('{0}@{1}', env.DOCKERHUB_REPOSITORY, steps.build.outputs.digest) }}
+          TEST_IMAGE: ${{ github.event_name == 'pull_request' && format('local/php:{0}-{1}', matrix.php-version, matrix.arch) || format('{0}:{1}-{2}', env.DOCKERHUB_REPOSITORY, matrix.php-version, matrix.arch) }}
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" != "pull_request" ]; then
@@ -92,20 +93,6 @@ jobs:
             docker run --rm "${TEST_IMAGE}" php -m | tr '[:upper:]' '[:lower:]' | grep -Fx "${ext}" >/dev/null
           done
 
-      - name: Export digest for manifest assembly
-        if: github.event_name != 'pull_request'
-        run: |
-          set -euo pipefail
-          echo "${{ steps.build.outputs.digest }}" > "/tmp/${{ matrix.php-version }}-${{ matrix.arch }}.txt"
-
-      - name: Upload digest artifact
-        if: github.event_name != 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: digests-${{ matrix.php-version }}-${{ matrix.arch }}
-          path: /tmp/${{ matrix.php-version }}-${{ matrix.arch }}.txt
-          if-no-files-found: error
-
   publish-manifests:
     name: Publish multi-platform manifests
     if: github.event_name != 'pull_request'
@@ -121,25 +108,15 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Download digest artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: /tmp/digests
-          pattern: digests-*
-          merge-multiple: true
-
       - name: Create and publish manifests
         run: |
           set -euo pipefail
           versions="7.3 7.4 8.0 8.1 8.2 8.3 8.4 8.5"
 
           for version in ${versions}; do
-            amd64_digest="$(cat "/tmp/digests/${version}-amd64.txt")"
-            arm64_digest="$(cat "/tmp/digests/${version}-arm64.txt")"
-
             docker buildx imagetools create \
               -t "${DOCKERHUB_REPOSITORY}:${version}" \
               -t "${DOCKERHUB_REPOSITORY}:${version}-${GITHUB_SHA}" \
-              "${DOCKERHUB_REPOSITORY}@${amd64_digest}" \
-              "${DOCKERHUB_REPOSITORY}@${arm64_digest}"
+              "${DOCKERHUB_REPOSITORY}:${version}-amd64" \
+              "${DOCKERHUB_REPOSITORY}:${version}-arm64"
           done
