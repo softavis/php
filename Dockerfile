@@ -33,6 +33,9 @@ RUN set -eux; \
             printf 'Acquire::Check-Valid-Until "false";\n' \
                 > /etc/apt/apt.conf.d/99archive; \
             ;; \
+        bullseye) \
+            sed -i -E '/debian-security/d' /etc/apt/sources.list; \
+            ;; \
     esac; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
